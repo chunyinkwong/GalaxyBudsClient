@@ -1,14 +1,7 @@
 name: Compile iOS (unsigned IPA)
 
 on:
-  push:
-    branches: [ master, NET10 ]
-    paths-ignore:
-      - '**.md'
-  pull_request:
-    branches: [ master ]
-    paths-ignore:
-      - '**.md'
+  # Manual dispatch only: nothing runs automatically on push/pull_request/release
   workflow_dispatch:
 
 permissions:
@@ -44,6 +37,7 @@ jobs:
         run: >
           dotnet restore GalaxyBudsClient.iOS/GalaxyBudsClient.iOS.csproj
           -r ios-arm64
+          -p:IsIOS=true
           --configfile GalaxyBudsClient/nuget.config
 
       - name: Publish (unsigned, device arm64)
@@ -54,6 +48,7 @@ jobs:
           -r ios-arm64
           -o bin_ios
           --no-restore
+          -p:IsIOS=true
           -p:EnableCodeSigning=false
           -p:CodesignRequireProvisioningProfile=false
 

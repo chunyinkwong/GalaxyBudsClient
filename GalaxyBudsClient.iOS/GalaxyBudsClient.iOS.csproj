@@ -30,6 +30,16 @@
         <EnableDefaultItems>true</EnableDefaultItems>
 
         <!--
+          The referenced GalaxyBudsClient project is a library for iOS (IsIOS=true switches its
+          OutputType), but the executable-reference validation can run against an evaluation that
+          doesn't see the IsIOS property (it then looks like a desktop "Exe" because the CI runner
+          is macOS). CI passes -p:IsIOS=true to the whole graph; disabling the validation keeps the
+          build working even if the property is lost somewhere (this is an app, nothing executes
+          the reference).
+        -->
+        <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+
+        <!--
           Builds are unsigned by default so that CI can produce an installable artifact without
           requiring access to an Apple developer account. Re-signing is done at install time.
           Pass -p:EnableCodeSigning=true (plus CodesignKey/CodesignProvision) for a signed build.

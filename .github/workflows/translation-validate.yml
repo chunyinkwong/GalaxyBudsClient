@@ -1,8 +1,7 @@
 name: Validate translations
 
 on:
-  push:
-    branches: [ master ]
+  # Manual dispatch only: nothing runs automatically on push/pull_request/release
   workflow_dispatch:
 
 jobs:

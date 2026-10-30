@@ -1,14 +1,7 @@
 name: Compile Windows binaries
 
 on:
-  push:
-    branches: [ master, NET10 ]
-  pull_request:
-    branches: [ master ]
-  release:
-     types: 
-       - published
-       - prereleased
+  # Manual dispatch only: nothing runs automatically on push/pull_request/release
   workflow_dispatch:
 
 jobs:
