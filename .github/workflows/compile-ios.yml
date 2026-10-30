@@ -1,0 +1,85 @@
+name: Compile iOS (unsigned IPA)
+
+on:
+  push:
+    branches: [ master, NET10 ]
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    branches: [ master ]
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    name: Build unsigned iOS IPA
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.6"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Install iOS workload
+        run: dotnet workload install ios
+
+      - name: Show environment
+        run: |
+          dotnet --info
+          xcodebuild -version
+
+      - name: Restore
+        run: >
+          dotnet restore GalaxyBudsClient.iOS/GalaxyBudsClient.iOS.csproj
+          -r ios-arm64
+          --configfile GalaxyBudsClient/nuget.config
+
+      - name: Publish (unsigned, device arm64)
+        run: >
+          dotnet publish GalaxyBudsClient.iOS/GalaxyBudsClient.iOS.csproj
+          -f net10.0-ios
+          -c Release
+          -r ios-arm64
+          -o bin_ios
+          --no-restore
+          -p:EnableCodeSigning=false
+          -p:CodesignRequireProvisioningProfile=false
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP_PATH="$(find bin_ios -maxdepth 2 -name '*.app' -type d -print -quit)"
+          if [ -z "${APP_PATH}" ]; then
+            echo "::error::No .app bundle was produced"
+            exit 1
+          fi
+          echo "App bundle: ${APP_PATH}"
+          plutil -p "${APP_PATH}/Info.plist" | head -60
+          APP_EXEC="$(plutil -extract CFBundleExecutable raw "${APP_PATH}/Info.plist")"
+          lipo -info "${APP_PATH}/${APP_EXEC}" || true
+          codesign -dv "${APP_PATH}" || echo "App bundle is unsigned (expected)"
+
+          rm -rf Payload
+          mkdir -p Payload
+          cp -R "${APP_PATH}" Payload/
+          ditto -c -k --sequesterRsrc --keepParent Payload GalaxyBudsClient-ios-unsigned.ipa
+          ls -lh GalaxyBudsClient-ios-unsigned.ipa
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v6
+        with:
+          name: GalaxyBudsClient-ios-unsigned
+          path: GalaxyBudsClient-ios-unsigned.ipa
+          if-no-files-found: error

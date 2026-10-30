@@ -27,7 +27,7 @@ using GalaxyBudsClient.Model.Config;
 using GalaxyBudsClient.Model.Constants;
 using GalaxyBudsClient.Model.Specifications;
 using GalaxyBudsClient.Platform;
-#if !Android
+#if !Android && !IOS
 using GalaxyBudsClient.Scripting;
 using GalaxyBudsClient.Scripting.Experiment;
 #endif
@@ -53,7 +53,7 @@ public class App : Application
             defaultBindingMode: BindingMode.OneWay, defaultValue: []);
     public NativeMenu TrayMenu => GetValue(TrayMenuProperty);
     
-#if !Android
+#if !Android && !IOS
     private readonly ExperimentManager _experimentManager = new();
 #endif
     
@@ -88,7 +88,7 @@ public class App : Application
         }, DispatcherPriority.Render);
         
         Log.Information("Translator mode file location: {File}", Loc.TranslatorModeFile);
-#if !Android
+#if !Android && !IOS
         ScriptManager.Instance.RegisterUserHooks();
         Log.Debug("Environment: {Env}", _experimentManager.CurrentEnvironment());
 #endif

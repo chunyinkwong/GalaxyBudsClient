@@ -1,8 +1,10 @@
 <Project>
     <PropertyGroup Condition="'$(TargetFramework)' != ''">
         <IsWindows Condition="$([System.String]::Copy('$(TargetFramework)').Contains('-windows'))">true</IsWindows>
-        <IsOSX Condition="$([System.String]::Copy('$(TargetFramework)').Contains('-macos')) Or ('$(_HostIsOSX)'=='true' And '$(IsAndroid)'!='true' And '$(IsWindows)'!='true')">true</IsOSX>
-        <IsLinux Condition="'$(IsWindows)' != 'true' And '$(IsOSX)' != 'true' And '$(IsAndroid)' != 'true'">true</IsLinux>
+        <!-- iOS: either requested explicitly by an iOS head project (IsIOS=true) or detected from the target framework -->
+        <IsIOS Condition="'$(IsIOS)' == '' And $([System.String]::Copy('$(TargetFramework)').Contains('-ios'))">true</IsIOS>
+        <IsOSX Condition="$([System.String]::Copy('$(TargetFramework)').Contains('-macos')) Or ('$(_HostIsOSX)'=='true' And '$(IsAndroid)'!='true' And '$(IsIOS)'!='true' And '$(IsWindows)'!='true')">true</IsOSX>
+        <IsLinux Condition="'$(IsWindows)' != 'true' And '$(IsOSX)' != 'true' And '$(IsAndroid)' != 'true' And '$(IsIOS)' != 'true'">true</IsLinux>
     </PropertyGroup>
     
     <PropertyGroup Condition="'$(IsWindows)'=='true'">
@@ -16,5 +18,8 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(IsLinux)'=='true'">
         <DefineConstants>$(DefineConstants);Linux</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(IsIOS)'=='true'">
+        <DefineConstants>$(DefineConstants);IOS</DefineConstants>
     </PropertyGroup>
 </Project>

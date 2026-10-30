@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <!--
+      iOS head project for the Avalonia application.
+
+      Produces GalaxyBudsClient.app for iOS devices (arm64). The CI workflow
+      (.github/workflows/compile-ios.yml) packages the app bundle into an unsigned .ipa
+      that can be re-signed and sideloaded with AltStore / Sideloadly / Xcode.
+
+      Local build (requires macOS + Xcode):
+        dotnet workload install ios
+        dotnet build -f net10.0-ios -c Release -r ios-arm64
+    -->
+    <Import Project="../GalaxyBudsClient/Application.props" />
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-ios</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+        <AnalysisLevel>latest</AnalysisLevel>
+        <EnableNETAnalyzers>true</EnableNETAnalyzers>
+        <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
+        <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">ios-arm64</RuntimeIdentifier>
+        <!-- Must differ from the referenced project's assembly name (GalaxyBudsClient) -->
+        <AssemblyName>GalaxyBudsClient.iOS</AssemblyName>
+        <RootNamespace>GalaxyBudsClient.iOS</RootNamespace>
+        <ApplicationTitle>Galaxy Buds Manager</ApplicationTitle>
+        <ApplicationId>me.timschneeberger.galaxybudsclient</ApplicationId>
+        <XSAppIconAssets>Assets.xcassets/AppIcon.appiconset</XSAppIconAssets>
+        <EnableDefaultItems>true</EnableDefaultItems>
+
+        <!--
+          Builds are unsigned by default so that CI can produce an installable artifact without
+          requiring access to an Apple developer account. Re-signing is done at install time.
+          Pass -p:EnableCodeSigning=true (plus CodesignKey/CodesignProvision) for a signed build.
+        -->
+        <EnableCodeSigning Condition="'$(EnableCodeSigning)' == ''">false</EnableCodeSigning>
+        <CodesignRequireProvisioningProfile Condition="'$(EnableCodeSigning)' != 'true'">false</CodesignRequireProvisioningProfile>
+        <CodesignKey Condition="'$(EnableCodeSigning)' != 'true'"></CodesignKey>
+        <CodesignProvision Condition="'$(EnableCodeSigning)' != 'true'"></CodesignProvision>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Avalonia.iOS" Version="$(AvaloniaVersion)" />
+        <!-- Provides the native SkiaSharp binaries for iOS (arm64) -->
+        <PackageReference Include="SkiaSharp.NativeAssets.iOS" Version="3.119.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../GalaxyBudsClient/GalaxyBudsClient.csproj">
+            <AdditionalProperties>IsIOS=true</AdditionalProperties>
+        </ProjectReference>
+    </ItemGroup>
+</Project>

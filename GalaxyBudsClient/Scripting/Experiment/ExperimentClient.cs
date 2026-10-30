@@ -25,14 +25,14 @@ public class ExperimentClient
     private const string ApiBase = "https://crowdsourcing.timschneeberger.me/v2";
     private const string ApiGetExperiments = ApiBase + "/experiments";
     private const string ApiPostResult = ApiBase + "/result";
-#if !Android
+#if !Android && !IOS
     private readonly HttpClient _client;
     private readonly Timer _timer;
 #endif
     
     public ExperimentClient()
     {
-#if !Android
+#if !Android && !IOS
         var handler = new HttpClientHandler
         {
             ServerCertificateCustomValidationCallback = delegate { return true; }
@@ -49,7 +49,7 @@ public class ExperimentClient
 
     public async Task<bool> PostResult(ExperimentResult result)
     {
-#if !Android
+#if !Android && !IOS
         Log.Debug("ExperimentClient: Posting results for experiment #{Id}...", result.ExperimentId);
         try
         {
@@ -83,7 +83,7 @@ public class ExperimentClient
 
     public async void ScanForExperiments()
     {
-#if !Android
+#if !Android && !IOS
         if (!BluetoothImpl.Instance.IsConnected || 
             BluetoothImpl.Instance.CurrentModel == Models.NULL ||
             DeviceMessageCache.Instance.ExtendedStatusUpdate == null)

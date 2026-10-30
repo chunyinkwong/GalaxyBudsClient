@@ -7,7 +7,7 @@
     <PropertyGroup Condition="'$(_HostIsWindows)'=='true' And '$(IsAndroid)'!='true'">
         <TargetFramework>net10.0-windows10.0.19041</TargetFramework>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(_HostIsOSX)'=='true' And '$(IsAndroid)'!='true'">
+    <PropertyGroup Condition="'$(_HostIsOSX)'=='true' And '$(IsAndroid)'!='true' And '$(IsIOS)'!='true'">
         <TargetFramework Condition="'$(UseMacOSSDK)'=='true'">net10.0-macos</TargetFramework>
         <TargetFramework Condition="'$(TargetFramework)'==''">net10.0</TargetFramework>
     </PropertyGroup>
@@ -37,6 +37,10 @@
     <PropertyGroup Condition="'$(IsAndroid)'=='true'">
         <OutputType>Library</OutputType>
         <DefineConstants>$(DefineConstants);Android</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(IsIOS)'=='true'">
+        <!-- Compiled as a library; the iOS head project (GalaxyBudsClient.iOS) provides the app entry point -->
+        <OutputType>Library</OutputType>
     </PropertyGroup>
     
     <Import Project="Application.props" />
