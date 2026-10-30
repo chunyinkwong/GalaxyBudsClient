@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CoreBluetooth;
+using CoreFoundation;
 using Foundation;
 using GalaxyBudsClient.Platform;
 using GalaxyBudsClient.Platform.Interfaces;
@@ -439,7 +440,7 @@ public class IosBluetoothService : IBluetoothService
             _suppressDisconnectEvent = true;
             try
             {
-                peripheral.Delegate = null;
+                peripheral.Delegate = null!;
                 if (peripheral.State != CBPeripheralState.Disconnected)
                     _central.CancelPeripheralConnection(peripheral);
             }
