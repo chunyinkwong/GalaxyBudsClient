@@ -55,21 +55,17 @@ jobs:
       - name: Package unsigned IPA
         run: |
           set -euo pipefail
-          APP_PATH="$(find bin_ios -maxdepth 2 -name '*.app' -type d -print -quit)"
-          if [ -z "${APP_PATH}" ]; then
-            echo "::error::No .app bundle was produced"
+          PUBLISHED_IPA="$(find bin_ios -maxdepth 1 -name '*.ipa' -type f -print -quit)"
+          if [ -z "${PUBLISHED_IPA}" ]; then
+            echo "::error::No IPA was produced"
             exit 1
           fi
-          echo "App bundle: ${APP_PATH}"
-          plutil -p "${APP_PATH}/Info.plist" | head -60
-          APP_EXEC="$(plutil -extract CFBundleExecutable raw "${APP_PATH}/Info.plist")"
-          lipo -info "${APP_PATH}/${APP_EXEC}" || true
-          codesign -dv "${APP_PATH}" || echo "App bundle is unsigned (expected)"
-
-          rm -rf Payload
-          mkdir -p Payload
-          cp -R "${APP_PATH}" Payload/
-          ditto -c -k --sequesterRsrc --keepParent Payload GalaxyBudsClient-ios-unsigned.ipa
+          echo "Published IPA: ${PUBLISHED_IPA}"
+          if ! unzip -Z1 "${PUBLISHED_IPA}" | grep -q '^Payload/[^/]*\.app/'; then
+            echo "::error::Published IPA does not contain an app bundle"
+            exit 1
+          fi
+          cp "${PUBLISHED_IPA}" GalaxyBudsClient-ios-unsigned.ipa
           ls -lh GalaxyBudsClient-ios-unsigned.ipa
 
       - name: Upload IPA
