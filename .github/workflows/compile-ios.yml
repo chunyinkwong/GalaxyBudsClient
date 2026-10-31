@@ -55,7 +55,9 @@ jobs:
       - name: Package unsigned IPA
         run: |
           set -euo pipefail
-          PUBLISHED_IPA="$(find bin_ios -maxdepth 1 -name '*.ipa' -type f -print -quit)"
+          # dotnet publish packages the app bundle into an IPA; it does not
+          # necessarily leave a standalone .app directory in the output.
+          PUBLISHED_IPA="$(find bin_ios -name '*.ipa' -type f -print -quit)"
           if [ -z "${PUBLISHED_IPA}" ]; then
             echo "::error::No IPA was produced"
             exit 1
