@@ -67,6 +67,15 @@ jobs:
             echo "::error::Published IPA does not contain an app bundle"
             exit 1
           fi
+          # The FluentAvalonia glyph font ("Seagull Fluent Icons") is embedded in
+          # FluentIcons.Resources.Avalonia.dll and is only referenced through avares:// URI strings, so
+          # ILLink drops the assembly unless it is rooted (see the TrimmerRootAssembly entry in
+          # GalaxyBudsClient.iOS.csproj). Without it the first FontIcon measure aborts the app with
+          # "Could not create glyphTypeface" -> SIGABRT. Fail the build instead of shipping that IPA.
+          if ! unzip -Z1 "${PUBLISHED_IPA}" | grep -q 'FluentIcons.Resources.Avalonia.dll'; then
+            echo "::error::FluentIcons.Resources.Avalonia.dll is missing from the app bundle (trimmed away); glyph icons would crash the app on first layout"
+            exit 1
+          fi
           cp "${PUBLISHED_IPA}" GalaxyBudsClient-ios-unsigned.ipa
           ls -lh GalaxyBudsClient-ios-unsigned.ipa
 

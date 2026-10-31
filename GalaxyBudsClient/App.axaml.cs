@@ -15,6 +15,7 @@ using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using FluentAvalonia.Styling;
 using GalaxyBudsClient.Interface;
@@ -118,6 +119,8 @@ public class App : Application
         // Our one-shot ReapplyCustomEqualizerAsync must read that flag before the VM can overwrite it,
         // or a post-power-cycle ESU reporting a non-custom mode would silently kill the re-push.
         SppMessageReceiver.Instance.ExtendedStatusUpdate += OnExtendedStatusUpdate;
+
+        VerifyIconFontAssets();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
@@ -287,8 +290,47 @@ public class App : Application
         await BluetoothImpl.Instance.SendAsync(new SetEqualizerEncoder { IsEnabled = true, Preset = 6 });
     }
 
+    /// <summary>
+    /// FluentAvalonia's control templates (NavigationView pane items, InfoBar, ComboBox chevrons, ...)
+    /// draw their glyphs with the "Seagull Fluent Icons" font. That font is embedded in the
+    /// FluentIcons.Resources.Avalonia assembly and only reachable through
+    /// avares://FluentIcons.Resources.Avalonia/Assets URIs - strings, not IL references. A trimmed
+    /// mobile build (ILLink full mode, the default for net*-ios) drops the otherwise unreferenced
+    /// assembly, and then the first FontIcon.MeasureOverride throws "Could not create
+    /// glyphTypeface" (System.InvalidOperationException) from inside the layout pass, which escapes
+    /// into native code and aborts the process ~0.3s after launch instead of surfacing as a normal
+    /// UI error. Verify the asset up front so the state is recorded in application.log
+    /// (see the TrimmerRootAssembly entry in GalaxyBudsClient.iOS.csproj and the IPA assertion in
+    /// .github/workflows/compile-ios.yml, which both exist to prevent exactly this).
+    /// </summary>
+    private static void VerifyIconFontAssets()
+    {
+        const string assetUri = "avares://FluentIcons.Resources.Avalonia/Assets/SeagullFluentIcons.otf";
+        try
+        {
+            if (AssetLoader.Exists(new Uri(assetUri)))
+            {
+                Log.Debug("Icon font asset found: {AssetUri}", assetUri);
+            }
+            else
+            {
+                Log.Error("Icon font asset is MISSING: {AssetUri}. Any FluentAvalonia FontIcon will " +
+                          "throw \"Could not create glyphTypeface\" during layout and abort the app", assetUri);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Icon font asset could not be resolved: {AssetUri}", assetUri);
+        }
+    }
+
     private static void OnDispatcherUnhandledException(object? sender, DispatcherUnhandledExceptionEventArgs e)
     {
+        // Always log first: exceptions that we don't mark as handled escape Avalonia's dispatcher
+        // loop straight into the native run loop (iOS/macOS) where they abort the process without
+        // leaving any trace in application.log. This line is what makes such crashes diagnosable.
+        Log.Error(e.Exception, "Unhandled exception in UI thread (dispatcher)");
+
         // Swallow ONLY FluentAvalonia's ItemsRepeaterAutomationPeer.GetChildrenCore() NRE, raised by
         // the macOS accessibility bridge while walking the automation tree. Match precisely (specific
         // type + method, unwrapping inner/aggregate exceptions) so genuine bugs still crash/report.

@@ -61,4 +61,26 @@
             <AdditionalProperties>IsIOS=true</AdditionalProperties>
         </ProjectReference>
     </ItemGroup>
+
+    <!--
+      Keep the FluentIcons glyph font in the bundle.
+
+      FluentAvalonia's control templates (NavigationView pane items, InfoBar, ComboBox chevrons, ...)
+      draw every glyph with the "Seagull Fluent Icons" font. That font lives as an embedded asset
+      inside FluentIcons.Resources.Avalonia.dll (~7.6 MB of .otf files under Assets/) and is reached
+      only through avares://FluentIcons.Resources.Avalonia/Assets URIs - i.e. through strings. Nothing
+      in IL references that assembly, so the ILLink pass that iOS always runs (PublishTrimmed with
+      TrimMode=full is the default for net*-ios) drops the whole assembly from the app bundle.
+
+      Symptom of the assembly being missing: the first FontIcon.MeasureOverride throws
+      "Could not create glyphTypeface. Font family: Seagull Fluent Icons (key:
+      avares://FluentIcons.Resources.Avalonia/Assets)" (System.InvalidOperationException), which
+      escapes the layout pass into native code and aborts the process with SIGABRT ~0.3s after launch
+      - no dialog, no managed log entry, only a Sentry/official crash report.
+
+      Rooting the resource assembly keeps it (and therefore its embedded fonts) intact.
+    -->
+    <ItemGroup>
+        <TrimmerRootAssembly Include="FluentIcons.Resources.Avalonia" />
+    </ItemGroup>
 </Project>
