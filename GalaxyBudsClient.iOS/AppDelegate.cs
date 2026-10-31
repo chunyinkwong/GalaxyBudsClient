@@ -53,7 +53,6 @@ public partial class AppDelegate : AvaloniaAppDelegate<App>
             Report("Managed exception escaped into native code", args.Exception);
         Runtime.MarshalObjectiveCException += (_, args) =>
             Report("Objective-C exception raised in managed code", args.Exception);
-
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
             Report("Unhandled managed exception", args.ExceptionObject as Exception);
         TaskScheduler.UnobservedTaskException += (_, args) =>
@@ -61,10 +60,25 @@ public partial class AppDelegate : AvaloniaAppDelegate<App>
     }
 
     private static void Report(string what, Exception? exception)
+        => Report(what, exception?.ToString());
+
+    /// <summary>
+    /// Objective-C exceptions surface as <see cref="Foundation.NSException"/>, which does not derive
+    /// from <see cref="System.Exception"/>; collapse it to text so both paths share one sink.
+    /// </summary>
+    private static void Report(string what, Foundation.NSException? exception)
+        => Report(what, exception is null
+            ? null
+            : $"NSException {exception.Name}: {exception.Reason}" +
+              (exception.CallStackSymbols is { Length: > 0 } symbols
+                  ? Environment.NewLine + string.Join(Environment.NewLine, symbols)
+                  : string.Empty));
+
+    private static void Report(string what, string? detail)
     {
         try
         {
-            Log.Fatal(exception, "{What}", what);
+            Log.Fatal("{What}: {Detail}", what, detail ?? "(no exception object)");
         }
         catch (Exception)
         {
@@ -75,7 +89,7 @@ public partial class AppDelegate : AvaloniaAppDelegate<App>
         try
         {
             Console.Error.WriteLine($"===== {what} =====");
-            Console.Error.WriteLine(exception?.ToString() ?? "(no exception object)");
+            Console.Error.WriteLine(detail ?? "(no exception object)");
         }
         catch (Exception)
         {
